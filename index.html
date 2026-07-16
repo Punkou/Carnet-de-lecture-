@@ -196,12 +196,13 @@
   }
   .tome-checks{
     display:flex;
-    gap:10px;
+    flex-wrap:wrap;
+    gap:8px 10px;
     flex:1;
     font-size:12px;
     color:var(--ink-soft);
   }
-  .tome-checks label{display:flex;align-items:center;gap:4px;}
+  .tome-checks label{display:flex;align-items:center;gap:4px;white-space:nowrap;}
   .tome-remove{
     background:none;border:none;color:var(--wine);
     cursor:pointer;font-size:16px;padding:0 4px;
@@ -369,6 +370,7 @@
   .badge.en_cours{background:var(--sage-bg);color:var(--sage);}
   .badge.lu{background:var(--gold-bg);color:var(--gold);}
   .badge.revendu{background:var(--wine-bg);color:var(--wine);}
+  .badge.dnf{background:var(--line);color:var(--ink-soft);text-decoration:line-through;}
   .badge.non_possede{background:var(--line);color:var(--ink-faint);}
   .tome-rows{
     margin-top:10px;
@@ -697,7 +699,9 @@ function renderTomeRows(){
       <input type="number" class="tome-num" min="1" value="${t.numero}" data-idx="${idx}" data-field="numero">
       <div class="tome-checks">
         <label><input type="checkbox" data-idx="${idx}" data-field="possede" ${t.possede ? 'checked' : ''}> Possédé</label>
-        <label><input type="checkbox" data-idx="${idx}" data-field="lu" ${t.lu ? 'checked' : ''}> Lu</label>
+        <label><input type="checkbox" data-idx="${idx}" data-field="lu_livre" ${t.lu_livre ? 'checked' : ''}> Lu livre</label>
+        <label><input type="checkbox" data-idx="${idx}" data-field="lu_tablette" ${t.lu_tablette ? 'checked' : ''}> Lu tablette</label>
+        <label><input type="checkbox" data-idx="${idx}" data-field="dnf" ${t.dnf ? 'checked' : ''}> DNF</label>
         <label><input type="checkbox" data-idx="${idx}" data-field="revendu" ${t.revendu ? 'checked' : ''}> Revendu</label>
       </div>
       <button type="button" class="tome-remove" data-idx="${idx}" aria-label="Supprimer ce tome">✕</button>
@@ -725,7 +729,7 @@ function renderTomeRows(){
 
 document.getElementById('add-tome-btn').addEventListener('click', ()=>{
   const maxNum = formTomes.reduce((m,t)=>Math.max(m, t.numero||0), 0);
-  formTomes.push({ numero: maxNum + 1, possede: true, lu: false, revendu: false });
+  formTomes.push({ numero: maxNum + 1, possede: true, lu_livre: false, lu_tablette: false, dnf: false, revendu: false });
   renderTomeRows();
 });
 
@@ -735,7 +739,7 @@ document.getElementById('bulk-add-tome-btn').addEventListener('click', ()=>{
   if(!count || count < 1) return;
   const maxNum = formTomes.reduce((m,t)=>Math.max(m, t.numero||0), 0);
   for(let i=1;i<=count;i++){
-    formTomes.push({ numero: maxNum + i, possede: true, lu: false, revendu: false });
+    formTomes.push({ numero: maxNum + i, possede: true, lu_livre: false, lu_tablette: false, dnf: false, revendu: false });
   }
   input.value = '';
   renderTomeRows();
@@ -1174,8 +1178,9 @@ function derivedStatut(b){
   if(!tomes.length) return 'a_lire';
   const owned = tomes.filter(t=>t.possede);
   if(!owned.length) return 'a_lire';
-  if(owned.every(t=>t.lu)) return 'lu';
-  if(owned.some(t=>t.lu)) return 'en_cours';
+  const isDone = t => t.lu_livre || t.lu_tablette || t.dnf;
+  if(owned.every(isDone)) return 'lu';
+  if(owned.some(isDone)) return 'en_cours';
   return 'a_lire';
 }
 
@@ -1210,17 +1215,22 @@ function renderSeriesChips(b){
     return '<p class="series-progress">Aucun tome enregistré.</p>';
   }
   const owned = tomes.filter(t=>t.possede).length;
-  const lu = tomes.filter(t=>t.lu).length;
+  const dnfCount = tomes.filter(t=>t.dnf).length;
+  const luCount = tomes.filter(t=>t.lu_livre || t.lu_tablette).length;
   const rows = tomes.map(t=>{
     let label, cls;
     if(t.revendu){ label = 'Revendu'; cls = 'revendu'; }
-    else if(t.lu){ label = 'Lu'; cls = 'lu'; }
+    else if(t.dnf){ label = 'DNF'; cls = 'dnf'; }
+    else if(t.lu_livre && t.lu_tablette){ label = 'Lu (livre + tablette)'; cls = 'lu'; }
+    else if(t.lu_livre){ label = 'Lu (livre)'; cls = 'lu'; }
+    else if(t.lu_tablette){ label = 'Lu (tablette)'; cls = 'lu'; }
     else if(t.possede){ label = 'À lire'; cls = 'a_lire'; }
     else { label = 'Non possédé'; cls = 'non_possede'; }
     return `<div class="tome-row-display"><span class="tome-row-num">Tome ${t.numero}</span><span class="badge ${cls}">${label}</span></div>`;
   }).join('');
+  const dnfText = dnfCount ? `, ${dnfCount} DNF` : '';
   return `
-    <p class="series-progress">${owned} tome${owned>1?'s':''} possédé${owned>1?'s':''}, ${lu} lu${lu>1?'s':''} sur ${tomes.length}</p>
+    <p class="series-progress">${owned} tome${owned>1?'s':''} possédé${owned>1?'s':''}, ${luCount} lu${luCount>1?'s':''}${dnfText} sur ${tomes.length}</p>
     <button type="button" class="tome-toggle-btn" data-toggle-id="${b.id}">Voir le détail des tomes ▾</button>
     <div class="tome-rows hidden" id="tome-detail-${b.id}">${rows}</div>
   `;
