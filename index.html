@@ -369,6 +369,8 @@
   .badge.a_lire{background:var(--dust-bg);color:var(--dust);}
   .badge.en_cours{background:var(--sage-bg);color:var(--sage);}
   .badge.lu{background:var(--gold-bg);color:var(--gold);}
+  .badge.lu_livre{background:var(--gold-bg);color:var(--gold);}
+  .badge.lu_tablette{background:var(--gold-bg);color:var(--gold);}
   .badge.revendu{background:var(--wine-bg);color:var(--wine);}
   .badge.dnf{background:var(--line);color:var(--ink-soft);text-decoration:line-through;}
   .badge.non_possede{background:var(--line);color:var(--ink-faint);}
@@ -515,7 +517,9 @@
         <select id="f-statut">
           <option value="a_lire">À lire</option>
           <option value="en_cours">En cours</option>
-          <option value="lu">Lu</option>
+          <option value="lu_livre">Lu (livre)</option>
+          <option value="lu_tablette">Lu (tablette)</option>
+          <option value="dnf">DNF</option>
         </select>
       </div>
     </div>
@@ -555,7 +559,9 @@
       <option value="">Tous les statuts</option>
       <option value="a_lire">À lire</option>
       <option value="en_cours">En cours</option>
-      <option value="lu">Lu</option>
+      <option value="lu_livre">Lu (livre)</option>
+      <option value="lu_tablette">Lu (tablette)</option>
+      <option value="dnf">DNF</option>
     </select>
     <select id="sort-by">
       <option value="recent">Trier : ajout récent</option>
@@ -753,7 +759,7 @@ document.getElementById('f-is-serie').addEventListener('change', (e)=>{
   document.getElementById('revendu-field-wrapper').classList.toggle('hidden', isSerie);
 });
 
-const STATUT_LABELS = { a_lire: 'À lire', en_cours: 'En cours', lu: 'Lu' };
+const STATUT_LABELS = { a_lire: 'À lire', en_cours: 'En cours', lu: 'Lu', lu_livre: 'Lu (livre)', lu_tablette: 'Lu (tablette)', dnf: 'DNF' };
 const TAB_COLORS = ['#A67C3D','#5E7A5C','#7A3B41','#4A6670','#6B4C6B','#8C5A3C'];
 
 function tabColorFor(genre){
