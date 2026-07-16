@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carnet de lecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F5F1E8;
+    --paper-raised:#FBF9F3;
+    --ink:#2B2A26;
+    --ink-soft:#6B6558;
+    --ink-faint:#9C9686;
+    --line:#DCD5C2;
+    --line-strong:#C7BEA6;
+    --gold:#A67C3D;
+    --gold-bg:#F0E3CC;
+    --sage:#5E7A5C;
+    --sage-bg:#E1E9DE;
+    --dust:#8C8370;
+    --dust-bg:#EDEAE0;
+    --wine:#7A3B41;
+    --wine-bg:#F0DEDE;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{
+    max-width:480px;
+    margin:0 auto;
+    padding:20px 16px 80px;
+    min-height:100vh;
+  }
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:18px;
+    border-bottom:1px solid var(--line-strong);
+    padding-bottom:14px;
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:28px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .count{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0;
+    white-space:nowrap;
+  }
+  .btn-add{
+    display:block;
+    width:100%;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    border-radius:var(--radius);
+    padding:13px;
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    font-weight:500;
+    cursor:pointer;
+    margin-bottom:14px;
+    transition:opacity .15s;
+  }
+  .btn-add:active{opacity:.75;}
+  .storage-notice{
+    font-size:11.5px;
+    color:var(--ink-faint);
+    text-align:center;
+    margin:-6px 0 12px;
+  }
+  .backup-row{
+    display:flex;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .backup-row .btn, .backup-row .photo-upload-btn{
+    flex:1;
+    text-align:center;
+  }
+  .add-form{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:16px;
+    margin-bottom:16px;
+  }
+  .add-form.hidden{display:none;}
+  .field{margin-bottom:12px;}
+  .field label{
+    display:block;
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-bottom:5px;
+    font-weight:500;
+  }
+  .field input[type=text], .field select, .field textarea{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--line-strong);
+    border-radius:7px;
+    background:#fff;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    color:var(--ink);
+  }
+  .field textarea{resize:vertical;min-height:56px;}
+  .isbn-row{display:flex;gap:6px;}
+  .isbn-row input{flex:1;}
+  .photo-row{display:flex;align-items:center;gap:12px;}
+  .photo-preview{
+    width:56px;height:76px;
+    object-fit:cover;
+    border-radius:6px;
+    border:1px solid var(--line-strong);
+    background:var(--paper);
+    flex:none;
+  }
+  .photo-preview.hidden{display:none;}
+  .photo-actions{display:flex;flex-direction:column;gap:6px;}
+  .photo-upload-btn{
+    display:inline-block;
+    text-align:center;
+    cursor:pointer;
+  }
+  .btn.small{
+    flex:none;
+    width:auto;
+    padding:9px 12px;
+    font-size:13px;
+    white-space:nowrap;
+  }
+  .hint{
+    font-size:12px;
+    color:var(--ink-soft);
+    margin:6px 0 0;
+    min-height:16px;
+  }
+  .hint.error{color:var(--wine);}
+  .hint.ok{color:var(--sage);}
+  .series-label{
+    display:block;
+    font-size:12px;
+    color:var(--ink-soft);
+    margin:0 0 8px;
+    font-weight:500;
+  }
+  #series-field-wrapper{margin-bottom:12px;}
+  #series-field-wrapper.hidden{display:none;}
+  .bulk-tome-row{
+    display:flex;
+    gap:6px;
+    margin-top:8px;
+  }
+  .bulk-tome-row input{
+    flex:1;
+    padding:9px 10px;
+    border:1px solid var(--line-strong);
+    border-radius:7px;
+    font-size:14px;
+    font-family:'Inter',sans-serif;
+  }
+  .bulk-tome-row .btn.small{flex:none;}
+  #statut-field-wrapper.hidden{display:none;}
+  #note-field-wrapper.hidden{display:none;}
+  #revendu-field-wrapper.hidden{display:none;}
+  .tome-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .tome-row:last-child{border-bottom:none;}
+  .tome-num{
+    width:44px;
+    padding:6px 4px;
+    text-align:center;
+    border:1px solid var(--line-strong);
+    border-radius:6px;
+    font-size:13px;
+  }
+  .tome-checks{
+    display:flex;
+    gap:10px;
+    flex:1;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .tome-checks label{display:flex;align-items:center;gap:4px;}
+  .tome-remove{
+    background:none;border:none;color:var(--wine);
+    cursor:pointer;font-size:16px;padding:0 4px;
+  }
+  .tomes-chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:9px;
+  }
+  .tome-chip{
+    font-size:12px;
+    font-weight:500;
+    padding:3px 9px;
+    border-radius:20px;
+    background:var(--dust-bg);
+    color:var(--dust);
+    border:1px solid transparent;
+  }
+  .tome-chip.chip-lu{background:var(--gold-bg);color:var(--gold);}
+  .tome-chip.chip-revendu{border-color:var(--wine);}
+  .series-progress{
+    font-size:12px;
+    color:var(--ink-faint);
+    margin-top:8px;
+  }
+  .title-results{
+    margin-top:8px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .title-results.hidden{display:none;}
+  .title-result{
+    padding:9px 10px;
+    font-size:13px;
+    cursor:pointer;
+    background:#fff;
+    border-bottom:1px solid var(--line);
+  }
+  .title-result:last-child{border-bottom:none;}
+  .title-result:active{background:var(--paper);}
+  .title-result .tr-title{font-weight:500;color:var(--ink);}
+  .title-result .tr-meta{color:var(--ink-soft);font-size:12px;margin-top:2px;}
+  .scanner-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.85);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    z-index:1000;
+    padding:20px;
+  }
+  .scanner-overlay.hidden{display:none;}
+  .scanner-overlay video{
+    width:100%;
+    max-width:420px;
+    border-radius:12px;
+    background:#000;
+  }
+  .scanner-overlay p{
+    color:#fff;
+    font-size:13px;
+    margin:14px 0;
+    text-align:center;
+  }
+  .scanner-overlay .btn{
+    max-width:200px;
+    background:#fff;
+  }
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .stars{display:flex;gap:4px;}
+  .star-btn{
+    background:none;border:none;cursor:pointer;
+    font-size:22px;color:var(--line-strong);
+    padding:0;line-height:1;
+  }
+  .star-btn.on{color:var(--gold);}
+  .check-row{display:flex;align-items:center;gap:8px;}
+  .check-row input{width:16px;height:16px;}
+  .check-row label{font-size:13px;color:var(--ink);font-weight:400;}
+  .form-actions{display:flex;gap:8px;margin-top:14px;}
+  .btn{
+    flex:1;
+    padding:10px;
+    border-radius:7px;
+    font-size:14px;
+    font-weight:500;
+    cursor:pointer;
+    border:1px solid var(--line-strong);
+    background:#fff;
+    color:var(--ink);
+  }
+  .btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .btn.danger{color:var(--wine);border-color:var(--wine-bg);}
+  .filters{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-bottom:16px;
+  }
+  .search-input{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--line-strong);
+    border-radius:8px;
+    background:var(--paper-raised);
+    font-size:14px;
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    margin-bottom:10px;
+  }
+  .filters select{
+    width:100%;
+    padding:8px 9px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    background:var(--paper-raised);
+    font-size:13px;
+    color:var(--ink-soft);
+    font-family:'Inter',sans-serif;
+  }
+  .book-list{display:flex;flex-direction:column;gap:10px;}
+  .card{
+    position:relative;
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 14px 14px 18px;
+    cursor:pointer;
+  }
+  .tab{
+    position:absolute;
+    left:0;top:14px;bottom:14px;
+    width:5px;
+    border-radius:0 3px 3px 0;
+  }
+  .card-top{display:flex;justify-content:space-between;gap:10px;}
+  .card-top-main{display:flex;gap:10px;align-items:flex-start;}
+  .card-cover{
+    width:40px;height:56px;
+    object-fit:cover;
+    border-radius:5px;
+    border:1px solid var(--line);
+    flex:none;
+  }
+  .card-title{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:17px;
+    margin:0 0 2px;
+  }
+  .card-author{font-size:13px;color:var(--ink-soft);margin:0;}
+  .badge{
+    font-size:11px;
+    font-weight:500;
+    padding:3px 9px;
+    border-radius:20px;
+    white-space:nowrap;
+    height:fit-content;
+  }
+  .badge.a_lire{background:var(--dust-bg);color:var(--dust);}
+  .badge.en_cours{background:var(--sage-bg);color:var(--sage);}
+  .badge.lu{background:var(--gold-bg);color:var(--gold);}
+  .badge.revendu{background:var(--wine-bg);color:var(--wine);}
+  .badge.non_possede{background:var(--line);color:var(--ink-faint);}
+  .tome-rows{
+    margin-top:10px;
+    border-top:1px solid var(--line);
+  }
+  .tome-rows.hidden{display:none;}
+  .tome-toggle-btn{
+    display:block;
+    background:none;
+    border:none;
+    padding:0;
+    margin-top:6px;
+    font-size:12px;
+    font-weight:500;
+    color:var(--gold);
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .tome-row-display{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:7px 0;
+    border-bottom:1px solid var(--line);
+    font-size:13px;
+  }
+  .tome-row-num{color:var(--ink);}
+  .card-meta{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:9px;
+    font-size:12px;
+    color:var(--ink-faint);
+  }
+  .meta-tag{
+    background:var(--paper);
+    border:1px solid var(--line);
+    padding:2px 8px;
+    border-radius:6px;
+  }
+  .card-stars{margin-top:8px;font-size:13px;color:var(--gold);}
+  .card-avis{
+    margin-top:8px;
+    font-size:13px;
+    color:var(--ink-soft);
+    font-style:italic;
+    line-height:1.5;
+  }
+  .resold-flag{
+    display:inline-flex;align-items:center;gap:4px;
+    margin-top:8px;
+    font-size:11px;font-weight:500;
+    color:var(--wine);
+    background:var(--wine-bg);
+    padding:3px 9px;border-radius:20px;
+  }
+  .edit-panel{
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px solid var(--line);
+  }
+  .empty{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:14px;
+    padding:40px 20px;
+    border:1px dashed var(--line-strong);
+    border-radius:12px;
+  }
+  .empty.hidden, .add-form.hidden{display:none;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1>Carnet de lecture</h1>
+    <p class="count" id="count">0 livre</p>
+  </header>
+
+  <p class="storage-notice" id="storage-notice"></p>
+
+  <button class="btn-add" id="toggle-add">+ Ajouter un livre</button>
+
+  <div class="backup-row">
+    <button type="button" class="btn small" id="export-btn">Exporter (sauvegarde)</button>
+    <label class="btn small photo-upload-btn" for="import-file">Importer</label>
+    <input type="file" accept="application/json" id="import-file" style="display:none;">
+  </div>
+
+  <form class="add-form hidden" id="add-form">
+    <div class="field">
+      <label>ISBN</label>
+      <div class="isbn-row">
+        <input type="text" id="f-isbn" placeholder="978...">
+        <button type="button" class="btn small" id="scan-btn">Scanner</button>
+        <button type="button" class="btn small" id="lookup-btn">Rechercher</button>
+      </div>
+      <p class="hint" id="isbn-hint"></p>
+    </div>
+    <div class="field">
+      <label>Photo de couverture</label>
+      <div class="photo-row">
+        <img id="photo-preview" class="photo-preview hidden" alt="">
+        <div class="photo-actions">
+          <label class="btn small photo-upload-btn" for="f-photo">Choisir une photo</label>
+          <input type="file" accept="image/*" id="f-photo" style="display:none;">
+          <button type="button" class="btn small" id="remove-photo-btn">Retirer</button>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Titre</label>
+      <div class="isbn-row">
+        <input type="text" id="f-titre" required>
+        <button type="button" class="btn small" id="title-search-btn">Rechercher</button>
+      </div>
+      <div id="title-results" class="title-results hidden"></div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Auteur</label>
+        <input type="text" id="f-auteur">
+      </div>
+      <div class="field">
+        <label>Éditeur</label>
+        <input type="text" id="f-editeur">
+      </div>
+    </div>
+    <div class="field">
+      <label>Genre</label>
+      <input type="text" id="f-genre">
+    </div>
+    <div class="field check-row">
+      <input type="checkbox" id="f-is-serie">
+      <label for="f-is-serie">Série avec plusieurs tomes</label>
+    </div>
+    <div class="row2" id="statut-field-wrapper">
+      <div class="field">
+        <label>Statut</label>
+        <select id="f-statut">
+          <option value="a_lire">À lire</option>
+          <option value="en_cours">En cours</option>
+          <option value="lu">Lu</option>
+        </select>
+      </div>
+    </div>
+    <div class="field" id="note-field-wrapper">
+      <label>Note</label>
+      <div class="stars" id="f-stars"></div>
+    </div>
+    <div id="series-field-wrapper" class="hidden">
+      <label class="series-label">Tomes</label>
+      <div id="tomes-list"></div>
+      <button type="button" class="btn" id="add-tome-btn">+ Ajouter un tome</button>
+      <div class="bulk-tome-row">
+        <input type="number" min="1" id="bulk-tome-count" placeholder="Nb de tomes (ex: 24)">
+        <button type="button" class="btn small" id="bulk-add-tome-btn">Ajouter en série</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Avis</label>
+      <textarea id="f-avis" placeholder="Ce que tu en as pensé..."></textarea>
+    </div>
+    <div class="field check-row" id="revendu-field-wrapper">
+      <input type="checkbox" id="f-revendu">
+      <label for="f-revendu">J'ai revendu ce livre</label>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn" id="cancel-form">Annuler</button>
+      <button type="submit" class="btn primary" id="submit-form">Enregistrer</button>
+    </div>
+  </form>
+
+  <input type="text" id="search-titre" class="search-input" placeholder="Rechercher un livre par titre...">
+
+  <div class="filters">
+    <select id="filter-genre"><option value="">Tous les genres</option></select>
+    <select id="filter-editeur"><option value="">Tous les éditeurs</option></select>
+    <select id="filter-statut">
+      <option value="">Tous les statuts</option>
+      <option value="a_lire">À lire</option>
+      <option value="en_cours">En cours</option>
+      <option value="lu">Lu</option>
+    </select>
+    <select id="sort-by">
+      <option value="recent">Trier : ajout récent</option>
+      <option value="titre">Trier : titre</option>
+      <option value="auteur">Trier : auteur</option>
+      <option value="editeur">Trier : éditeur</option>
+      <option value="genre">Trier : genre</option>
+    </select>
+  </div>
+
+  <div class="book-list" id="book-list"></div>
+  <p class="empty hidden" id="empty-state">Ta bibliothèque est vide pour l'instant. Ajoute ton premier livre pour commencer ton carnet de lecture.</p>
+
+</div>
+
+<div class="scanner-overlay hidden" id="scanner-overlay">
+  <video id="scanner-video" playsinline autoplay muted></video>
+  <p id="scanner-status">Vise le code-barres du livre.</p>
+  <button type="button" class="btn" id="scanner-cancel">Annuler</button>
+</div>
+
+<script>
+const STORAGE_KEY = 'books';
+const LOCAL_BOOKS_KEY = 'carnet-lecture:books';
+const LOCAL_COVERS_KEY = 'carnet-lecture:covers';
+let books = [];
+let covers = {};
+let editingId = null;
+let formRating = 0;
+let formTomes = [];
+let formCoverUrl = '';
+let formCoverData = null;
+let formPhotoRemoved = false;
+let storageMode = 'local'; // 'claude' ou 'local'
+
+function claudeStorageAvailable(){
+  return typeof window !== 'undefined' && window.storage && typeof window.storage.get === 'function';
+}
+
+function showStorageNotice(text){
+  const el = document.getElementById('storage-notice');
+  if(el) el.textContent = text;
+}
+
+const COVERS_KEY = 'covers';
+
+async function loadCovers(){
+  if(storageMode === 'claude'){
+    try{
+      const result = await window.storage.get(COVERS_KEY, false);
+      covers = result ? JSON.parse(result.value) : {};
+      return;
+    }catch(e){ covers = {}; return; }
+  }
+  try{
+    const raw = localStorage.getItem(LOCAL_COVERS_KEY);
+    covers = raw ? JSON.parse(raw) : {};
+  }catch(e){
+    covers = {};
+  }
+}
+
+async function saveCovers(){
+  if(storageMode === 'claude'){
+    try{
+      await window.storage.set(COVERS_KEY, JSON.stringify(covers), false);
+    }catch(e){
+      console.error('Erreur de sauvegarde des photos', e);
+    }
+    return;
+  }
+  try{
+    localStorage.setItem(LOCAL_COVERS_KEY, JSON.stringify(covers));
+  }catch(e){
+    showStorageNotice('Les infos texte sont sauvegardées, mais il n\'y a plus assez de place dans ce navigateur pour garder toutes les photos.');
+  }
+}
+
+function compressImage(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const maxDim = 240;
+        let w = img.width, h = img.height;
+        if(w > h){ if(w > maxDim){ h = Math.round(h * maxDim / w); w = maxDim; } }
+        else { if(h > maxDim){ w = Math.round(w * maxDim / h); h = maxDim; } }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.6));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function updatePhotoPreview(){
+  const preview = document.getElementById('photo-preview');
+  const src = formCoverData || formCoverUrl;
+  if(src){
+    preview.src = src;
+    preview.classList.remove('hidden');
+  } else {
+    preview.classList.add('hidden');
+    preview.src = '';
+  }
+}
+
+document.getElementById('f-photo').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    formCoverData = await compressImage(file);
+    formPhotoRemoved = false;
+    updatePhotoPreview();
+  }catch(err){
+    console.error('Erreur de traitement de la photo', err);
+  }
+});
+
+document.getElementById('remove-photo-btn').addEventListener('click', ()=>{
+  formCoverData = null;
+  formCoverUrl = '';
+  formPhotoRemoved = true;
+  document.getElementById('f-photo').value = '';
+  updatePhotoPreview();
+});
+
+function renderTomeRows(){
+  const container = document.getElementById('tomes-list');
+  container.innerHTML = '';
+  formTomes.forEach((t, idx)=>{
+    const row = document.createElement('div');
+    row.className = 'tome-row';
+    row.innerHTML = `
+      <input type="number" class="tome-num" min="1" value="${t.numero}" data-idx="${idx}" data-field="numero">
+      <div class="tome-checks">
+        <label><input type="checkbox" data-idx="${idx}" data-field="possede" ${t.possede ? 'checked' : ''}> Possédé</label>
+        <label><input type="checkbox" data-idx="${idx}" data-field="lu" ${t.lu ? 'checked' : ''}> Lu</label>
+        <label><input type="checkbox" data-idx="${idx}" data-field="revendu" ${t.revendu ? 'checked' : ''}> Revendu</label>
+      </div>
+      <button type="button" class="tome-remove" data-idx="${idx}" aria-label="Supprimer ce tome">✕</button>
+    `;
+    container.appendChild(row);
+  });
+  container.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('change', (e)=>{
+      const idx = parseInt(e.target.dataset.idx, 10);
+      const field = e.target.dataset.field;
+      if(field === 'numero'){
+        formTomes[idx].numero = parseInt(e.target.value, 10) || 1;
+      } else {
+        formTomes[idx][field] = e.target.checked;
+      }
+    });
+  });
+  container.querySelectorAll('.tome-remove').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      formTomes.splice(parseInt(btn.dataset.idx, 10), 1);
+      renderTomeRows();
+    });
+  });
+}
+
+document.getElementById('add-tome-btn').addEventListener('click', ()=>{
+  const maxNum = formTomes.reduce((m,t)=>Math.max(m, t.numero||0), 0);
+  formTomes.push({ numero: maxNum + 1, possede: true, lu: false, revendu: false });
+  renderTomeRows();
+});
+
+document.getElementById('bulk-add-tome-btn').addEventListener('click', ()=>{
+  const input = document.getElementById('bulk-tome-count');
+  const count = parseInt(input.value, 10);
+  if(!count || count < 1) return;
+  const maxNum = formTomes.reduce((m,t)=>Math.max(m, t.numero||0), 0);
+  for(let i=1;i<=count;i++){
+    formTomes.push({ numero: maxNum + i, possede: true, lu: false, revendu: false });
+  }
+  input.value = '';
+  renderTomeRows();
+});
+
+document.getElementById('f-is-serie').addEventListener('change', (e)=>{
+  const isSerie = e.target.checked;
+  document.getElementById('series-field-wrapper').classList.toggle('hidden', !isSerie);
+  document.getElementById('statut-field-wrapper').classList.toggle('hidden', isSerie);
+  document.getElementById('note-field-wrapper').classList.toggle('hidden', isSerie);
+  document.getElementById('revendu-field-wrapper').classList.toggle('hidden', isSerie);
+});
+
+const STATUT_LABELS = { a_lire: 'À lire', en_cours: 'En cours', lu: 'Lu' };
+const TAB_COLORS = ['#A67C3D','#5E7A5C','#7A3B41','#4A6670','#6B4C6B','#8C5A3C'];
+
+function tabColorFor(genre){
+  if(!genre) return '#C7BEA6';
+  let hash = 0;
+  for(let i=0;i<genre.length;i++){ hash = genre.charCodeAt(i) + ((hash<<5)-hash); }
+  return TAB_COLORS[Math.abs(hash) % TAB_COLORS.length];
+}
+
+async function loadBooks(){
+  storageMode = claudeStorageAvailable() ? 'claude' : 'local';
+  if(storageMode === 'claude'){
+    try{
+      const result = await window.storage.get(STORAGE_KEY, false);
+      books = result ? JSON.parse(result.value) : [];
+    }catch(e){
+      books = [];
+    }
+    showStorageNotice('Sauvegarde liée à ton compte Claude.');
+  } else {
+    try{
+      const raw = localStorage.getItem(LOCAL_BOOKS_KEY);
+      books = raw ? JSON.parse(raw) : [];
+    }catch(e){
+      books = [];
+    }
+    showStorageNotice('Sauvegarde locale sur ce navigateur. Pense à exporter une sauvegarde avant de changer d\'appareil.');
+  }
+  await loadCovers();
+  render();
+}
+
+async function saveBooks(){
+  if(storageMode === 'claude'){
+    try{
+      await window.storage.set(STORAGE_KEY, JSON.stringify(books), false);
+    }catch(e){
+      console.error('Erreur de sauvegarde', e);
+    }
+    return;
+  }
+  try{
+    localStorage.setItem(LOCAL_BOOKS_KEY, JSON.stringify(books));
+  }catch(e){
+    console.error('Erreur de sauvegarde locale', e);
+    showStorageNotice('Attention : la sauvegarde locale a échoué (espace insuffisant). Exporte une sauvegarde régulièrement.');
+  }
+}
+
+function uid(){
+  return 'b' + Date.now() + Math.random().toString(36).slice(2,8);
+}
+
+function buildStars(container, value, onChange){
+  container.innerHTML = '';
+  for(let i=1;i<=5;i++){
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'star-btn' + (i<=value ? ' on' : '');
+    btn.textContent = '★';
+    btn.addEventListener('click', ()=>{
+      onChange(i === value ? 0 : i);
+    });
+    container.appendChild(btn);
+  }
+}
+
+function refreshFormStars(){
+  buildStars(document.getElementById('f-stars'), formRating, (v)=>{
+    formRating = v;
+    refreshFormStars();
+  });
+}
+refreshFormStars();
+
+async function tryOpenLibrary(isbn){
+  const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&jscmd=data&format=json`);
+  const data = await res.json();
+  const info = data['ISBN:' + isbn];
+  if(!info) return null;
+  return {
+    titre: info.title || '',
+    auteur: (info.authors && info.authors.length) ? info.authors.map(a=>a.name).join(', ') : '',
+    editeur: (info.publishers && info.publishers.length) ? info.publishers[0].name : '',
+    genre: (info.subjects && info.subjects.length) ? info.subjects[0].name : '',
+    coverUrl: (info.cover && info.cover.medium) ? info.cover.medium : ''
+  };
+}
+
+async function tryGoogleBooks(isbn){
+  const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+  const data = await res.json();
+  if(!data.items || !data.items.length) return null;
+  const v = data.items[0].volumeInfo || {};
+  return {
+    titre: v.title || '',
+    auteur: (v.authors && v.authors.length) ? v.authors.join(', ') : '',
+    editeur: v.publisher || '',
+    genre: (v.categories && v.categories.length) ? v.categories[0] : '',
+    coverUrl: (v.imageLinks && v.imageLinks.thumbnail) ? v.imageLinks.thumbnail.replace('http://','https://') : ''
+  };
+}
+
+async function lookupISBN(isbnRaw){
+  const hint = document.getElementById('isbn-hint');
+  const isbn = (isbnRaw || '').replace(/[^0-9Xx]/g,'');
+  if(!isbn){
+    hint.textContent = 'Entre un ISBN d\'abord.';
+    hint.className = 'hint error';
+    return;
+  }
+  hint.textContent = 'Recherche en cours...';
+  hint.className = 'hint';
+  try{
+    let info = null;
+    try{ info = await tryOpenLibrary(isbn); }catch(e){ info = null; }
+    let source = 'Open Library';
+    if(!info){
+      try{ info = await tryGoogleBooks(isbn); source = 'Google Books'; }catch(e){ info = null; }
+    }
+    if(!info){
+      hint.textContent = 'Aucun résultat pour cet ISBN, même sur Google Books. Remplis les champs manuellement.';
+      hint.className = 'hint error';
+      return;
+    }
+    if(info.titre) document.getElementById('f-titre').value = info.titre;
+    if(info.auteur) document.getElementById('f-auteur').value = info.auteur;
+    if(info.editeur) document.getElementById('f-editeur').value = info.editeur;
+    if(info.genre && !document.getElementById('f-genre').value) document.getElementById('f-genre').value = info.genre;
+    if(info.coverUrl && !formCoverData){
+      formCoverUrl = info.coverUrl;
+      formPhotoRemoved = false;
+      updatePhotoPreview();
+    }
+    hint.textContent = `Informations trouvées via ${source} et remplies automatiquement.`;
+    hint.className = 'hint ok';
+  }catch(e){
+    hint.textContent = 'Impossible de récupérer les infos (pas de connexion ?). Remplis manuellement.';
+    hint.className = 'hint error';
+  }
+}
+
+async function searchByTitle(){
+  const resultsBox = document.getElementById('title-results');
+  const titre = document.getElementById('f-titre').value.trim();
+  const hint = document.getElementById('isbn-hint');
+  if(!titre){
+    hint.textContent = 'Tape d\'abord un titre à rechercher.';
+    hint.className = 'hint error';
+    return;
+  }
+  resultsBox.innerHTML = '<div class="title-result">Recherche en cours...</div>';
+  resultsBox.classList.remove('hidden');
+  try{
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(titre)}&maxResults=5`);
+    const data = await res.json();
+    if(!data.items || !data.items.length){
+      resultsBox.innerHTML = '<div class="title-result">Aucun résultat. Continue à remplir manuellement.</div>';
+      return;
+    }
+    resultsBox.innerHTML = '';
+    data.items.forEach(item=>{
+      const v = item.volumeInfo || {};
+      const row = document.createElement('div');
+      row.className = 'title-result';
+      const meta = [v.authors ? v.authors.join(', ') : '', v.publisher || '', v.publishedDate ? v.publishedDate.slice(0,4) : ''].filter(Boolean).join(' · ');
+      const thumb = (v.imageLinks && v.imageLinks.thumbnail) ? v.imageLinks.thumbnail.replace('http://','https://') : '';
+      row.innerHTML = `
+        <div style="display:flex; gap:10px; align-items:center;">
+          ${thumb ? `<img src="${thumb}" alt="" style="width:32px;height:44px;object-fit:cover;border-radius:4px;flex:none;">` : ''}
+          <div>
+            <div class="tr-title">${escapeHtml(v.title || 'Sans titre')}</div>
+            <div class="tr-meta">${escapeHtml(meta)}</div>
+          </div>
+        </div>
+      `;
+      row.addEventListener('click', ()=>{
+        document.getElementById('f-titre').value = v.title || titre;
+        document.getElementById('f-auteur').value = v.authors ? v.authors.join(', ') : '';
+        document.getElementById('f-editeur').value = v.publisher || '';
+        if(v.categories && v.categories.length && !document.getElementById('f-genre').value){
+          document.getElementById('f-genre').value = v.categories[0];
+        }
+        const isbnEntry = (v.industryIdentifiers || []).find(id=>id.type === 'ISBN_13') || (v.industryIdentifiers || [])[0];
+        if(isbnEntry && !document.getElementById('f-isbn').value){
+          document.getElementById('f-isbn').value = isbnEntry.identifier;
+        }
+        if(thumb && !formCoverData){
+          formCoverUrl = thumb;
+          formPhotoRemoved = false;
+          updatePhotoPreview();
+        }
+        resultsBox.classList.add('hidden');
+        hint.textContent = 'Informations remplies depuis Google Books.';
+        hint.className = 'hint ok';
+      });
+      resultsBox.appendChild(row);
+    });
+  }catch(e){
+    resultsBox.innerHTML = '<div class="title-result">Recherche impossible (pas de connexion ?).</div>';
+  }
+}
+
+document.getElementById('title-search-btn').addEventListener('click', searchByTitle);
+
+document.getElementById('lookup-btn').addEventListener('click', ()=>{
+  lookupISBN(document.getElementById('f-isbn').value);
+});
+
+let scanStream = null;
+let scanLoopActive = false;
+
+async function openScanner(){
+  const overlay = document.getElementById('scanner-overlay');
+  const video = document.getElementById('scanner-video');
+  const status = document.getElementById('scanner-status');
+
+  if(!('BarcodeDetector' in window)){
+    document.getElementById('isbn-hint').textContent = 'Le scan caméra n\'est pas pris en charge par ce navigateur. Tape l\'ISBN manuellement puis clique sur "Rechercher".';
+    document.getElementById('isbn-hint').className = 'hint error';
+    return;
+  }
+
+  try{
+    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+  }catch(e){
+    document.getElementById('isbn-hint').textContent = 'Accès à la caméra refusé ou indisponible. Tape l\'ISBN manuellement.';
+    document.getElementById('isbn-hint').className = 'hint error';
+    return;
+  }
+
+  video.srcObject = scanStream;
+  overlay.classList.remove('hidden');
+  scanLoopActive = true;
+
+  const detector = new BarcodeDetector({ formats: ['ean_13','ean_8','upc_a','upc_e'] });
+
+  async function scanLoop(){
+    if(!scanLoopActive) return;
+    try{
+      const codes = await detector.detect(video);
+      if(codes && codes.length){
+        const value = codes[0].rawValue;
+        closeScanner();
+        document.getElementById('f-isbn').value = value;
+        lookupISBN(value);
+        return;
+      }
+    }catch(e){ /* ignore single-frame errors */ }
+    requestAnimationFrame(scanLoop);
+  }
+  video.addEventListener('loadedmetadata', ()=>{ requestAnimationFrame(scanLoop); }, { once:true });
+}
+
+function closeScanner(){
+  scanLoopActive = false;
+  const overlay = document.getElementById('scanner-overlay');
+  overlay.classList.add('hidden');
+  if(scanStream){
+    scanStream.getTracks().forEach(t=>t.stop());
+    scanStream = null;
+  }
+}
+
+document.getElementById('scan-btn').addEventListener('click', openScanner);
+document.getElementById('scanner-cancel').addEventListener('click', closeScanner);
+
+function resetForm(){
+  editingId = null;
+  formRating = 0;
+  formTomes = [];
+  formCoverUrl = '';
+  formCoverData = null;
+  formPhotoRemoved = false;
+  document.getElementById('f-photo').value = '';
+  updatePhotoPreview();
+  renderTomeRows();
+  document.getElementById('f-is-serie').checked = false;
+  document.getElementById('series-field-wrapper').classList.add('hidden');
+  document.getElementById('statut-field-wrapper').classList.remove('hidden');
+  document.getElementById('note-field-wrapper').classList.remove('hidden');
+  document.getElementById('revendu-field-wrapper').classList.remove('hidden');
+  document.getElementById('title-results').classList.add('hidden');
+  document.getElementById('f-isbn').value = '';
+  document.getElementById('isbn-hint').textContent = '';
+  document.getElementById('isbn-hint').className = 'hint';
+  document.getElementById('f-titre').value = '';
+  document.getElementById('f-auteur').value = '';
+  document.getElementById('f-editeur').value = '';
+  document.getElementById('f-genre').value = '';
+  document.getElementById('f-statut').value = 'a_lire';
+  document.getElementById('f-avis').value = '';
+  document.getElementById('f-revendu').checked = false;
+  document.getElementById('submit-form').textContent = 'Enregistrer';
+  refreshFormStars();
+}
+
+function openFormForEdit(book){
+  editingId = book.id;
+  formRating = book.note || 0;
+  formTomes = book.isSerie ? JSON.parse(JSON.stringify(book.tomes || [])) : [];
+  formCoverData = covers[book.id] || null;
+  formCoverUrl = book.coverUrl || '';
+  formPhotoRemoved = false;
+  document.getElementById('f-photo').value = '';
+  updatePhotoPreview();
+  document.getElementById('f-is-serie').checked = !!book.isSerie;
+  document.getElementById('series-field-wrapper').classList.toggle('hidden', !book.isSerie);
+  document.getElementById('statut-field-wrapper').classList.toggle('hidden', !!book.isSerie);
+  document.getElementById('note-field-wrapper').classList.toggle('hidden', !!book.isSerie);
+  document.getElementById('revendu-field-wrapper').classList.toggle('hidden', !!book.isSerie);
+  renderTomeRows();
+  document.getElementById('f-isbn').value = book.isbn || '';
+  document.getElementById('isbn-hint').textContent = '';
+  document.getElementById('isbn-hint').className = 'hint';
+  document.getElementById('f-titre').value = book.titre || '';
+  document.getElementById('f-auteur').value = book.auteur || '';
+  document.getElementById('f-editeur').value = book.editeur || '';
+  document.getElementById('f-genre').value = book.genre || '';
+  document.getElementById('f-statut').value = book.statut || 'a_lire';
+  document.getElementById('f-avis').value = book.avis || '';
+  document.getElementById('f-revendu').checked = !!book.revendu;
+  document.getElementById('submit-form').textContent = 'Mettre à jour';
+  refreshFormStars();
+  document.getElementById('add-form').classList.remove('hidden');
+  document.getElementById('add-form').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+document.getElementById('toggle-add').addEventListener('click', ()=>{
+  const form = document.getElementById('add-form');
+  const isHidden = form.classList.contains('hidden');
+  if(isHidden){
+    resetForm();
+    form.classList.remove('hidden');
+  } else {
+    form.classList.add('hidden');
+  }
+});
+
+document.getElementById('cancel-form').addEventListener('click', ()=>{
+  document.getElementById('add-form').classList.add('hidden');
+  resetForm();
+});
+
+document.getElementById('add-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const titre = document.getElementById('f-titre').value.trim();
+  if(!titre) return;
+  const isSerie = document.getElementById('f-is-serie').checked;
+  const bookId = editingId || uid();
+  const data = {
+    isbn: document.getElementById('f-isbn').value.trim(),
+    titre,
+    auteur: document.getElementById('f-auteur').value.trim(),
+    editeur: document.getElementById('f-editeur').value.trim(),
+    genre: document.getElementById('f-genre').value.trim(),
+    avis: document.getElementById('f-avis').value.trim(),
+    coverUrl: formCoverUrl,
+    isSerie
+  };
+  if(isSerie){
+    data.tomes = [...formTomes].sort((a,b)=>a.numero-b.numero);
+    data.statut = null;
+    data.note = null;
+    data.revendu = null;
+  } else {
+    data.statut = document.getElementById('f-statut').value;
+    data.note = formRating;
+    data.revendu = document.getElementById('f-revendu').checked;
+    data.tomes = null;
+  }
+  if(formCoverData){
+    covers[bookId] = formCoverData;
+  } else if(formPhotoRemoved){
+    delete covers[bookId];
+  }
+  if(editingId){
+    const idx = books.findIndex(b=>b.id===editingId);
+    if(idx>-1) books[idx] = {...books[idx], ...data};
+  } else {
+    books.unshift({ id: bookId, createdAt: Date.now(), ...data });
+  }
+  await saveBooks();
+  await saveCovers();
+  document.getElementById('add-form').classList.add('hidden');
+  resetForm();
+  render();
+});
+
+async function deleteBook(id){
+  books = books.filter(b=>b.id!==id);
+  if(covers[id]){
+    delete covers[id];
+    await saveCovers();
+  }
+  await saveBooks();
+  render();
+}
+
+function populateFilterOptions(){
+  const genreSel = document.getElementById('filter-genre');
+  const editeurSel = document.getElementById('filter-editeur');
+  const curGenre = genreSel.value;
+  const curEditeur = editeurSel.value;
+  const genres = [...new Set(books.map(b=>b.genre).filter(Boolean))].sort();
+  const editeurs = [...new Set(books.map(b=>b.editeur).filter(Boolean))].sort();
+  genreSel.innerHTML = '<option value="">Tous les genres</option>' + genres.map(g=>`<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+  editeurSel.innerHTML = '<option value="">Tous les éditeurs</option>' + editeurs.map(ed=>`<option value="${escapeHtml(ed)}">${escapeHtml(ed)}</option>`).join('');
+  genreSel.value = curGenre;
+  editeurSel.value = curEditeur;
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+function derivedStatut(b){
+  if(!b.isSerie) return b.statut;
+  const tomes = b.tomes || [];
+  if(!tomes.length) return 'a_lire';
+  const owned = tomes.filter(t=>t.possede);
+  if(!owned.length) return 'a_lire';
+  if(owned.every(t=>t.lu)) return 'lu';
+  if(owned.some(t=>t.lu)) return 'en_cours';
+  return 'a_lire';
+}
+
+function getFiltered(){
+  const search = document.getElementById('search-titre').value.trim().toLowerCase();
+  const genre = document.getElementById('filter-genre').value;
+  const editeur = document.getElementById('filter-editeur').value;
+  const statut = document.getElementById('filter-statut').value;
+  const sortBy = document.getElementById('sort-by').value;
+
+  let list = books.filter(b=>{
+    if(search && !(b.titre||'').toLowerCase().includes(search)) return false;
+    if(genre && b.genre !== genre) return false;
+    if(editeur && b.editeur !== editeur) return false;
+    if(statut && derivedStatut(b) !== statut) return false;
+    return true;
+  });
+
+  list = [...list];
+  if(sortBy === 'titre') list.sort((a,b)=>(a.titre||'').localeCompare(b.titre||''));
+  else if(sortBy === 'auteur') list.sort((a,b)=>(a.auteur||'').localeCompare(b.auteur||''));
+  else if(sortBy === 'editeur') list.sort((a,b)=>(a.editeur||'').localeCompare(b.editeur||''));
+  else if(sortBy === 'genre') list.sort((a,b)=>(a.genre||'').localeCompare(b.genre||''));
+  else list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+
+  return list;
+}
+
+function renderSeriesChips(b){
+  const tomes = b.tomes || [];
+  if(!tomes.length){
+    return '<p class="series-progress">Aucun tome enregistré.</p>';
+  }
+  const owned = tomes.filter(t=>t.possede).length;
+  const lu = tomes.filter(t=>t.lu).length;
+  const rows = tomes.map(t=>{
+    let label, cls;
+    if(t.revendu){ label = 'Revendu'; cls = 'revendu'; }
+    else if(t.lu){ label = 'Lu'; cls = 'lu'; }
+    else if(t.possede){ label = 'À lire'; cls = 'a_lire'; }
+    else { label = 'Non possédé'; cls = 'non_possede'; }
+    return `<div class="tome-row-display"><span class="tome-row-num">Tome ${t.numero}</span><span class="badge ${cls}">${label}</span></div>`;
+  }).join('');
+  return `
+    <p class="series-progress">${owned} tome${owned>1?'s':''} possédé${owned>1?'s':''}, ${lu} lu${lu>1?'s':''} sur ${tomes.length}</p>
+    <button type="button" class="tome-toggle-btn" data-toggle-id="${b.id}">Voir le détail des tomes ▾</button>
+    <div class="tome-rows hidden" id="tome-detail-${b.id}">${rows}</div>
+  `;
+}
+
+function starsDisplay(n){
+  let out = '';
+  for(let i=1;i<=5;i++) out += i<=n ? '★' : '☆';
+  return out;
+}
+
+function render(){
+  populateFilterOptions();
+  const list = getFiltered();
+  const container = document.getElementById('book-list');
+  const empty = document.getElementById('empty-state');
+
+  document.getElementById('count').textContent = books.length + (books.length>1 ? ' livres' : ' livre');
+
+  if(books.length === 0){
+    empty.classList.remove('hidden');
+    container.innerHTML = '';
+    return;
+  }
+  empty.classList.add('hidden');
+
+  if(list.length === 0){
+    container.innerHTML = '<p class="empty">Aucun livre ne correspond à ces filtres.</p>';
+    return;
+  }
+
+  container.innerHTML = list.map(b=>{
+    const cover = covers[b.id] || b.coverUrl || '';
+    return `
+    <div class="card" data-id="${b.id}">
+      <div class="tab" style="background:${tabColorFor(b.genre)}"></div>
+      <div class="card-top">
+        <div class="card-top-main">
+          ${cover ? `<img class="card-cover" src="${cover}" alt="">` : ''}
+          <div>
+            <p class="card-title">${escapeHtml(b.titre)}</p>
+            ${b.auteur ? `<p class="card-author">${escapeHtml(b.auteur)}</p>` : ''}
+          </div>
+        </div>
+        <span class="badge ${derivedStatut(b)}">${STATUT_LABELS[derivedStatut(b)] || ''}</span>
+      </div>
+      ${(b.editeur || b.genre) ? `<div class="card-meta">
+        ${b.editeur ? `<span class="meta-tag">${escapeHtml(b.editeur)}</span>` : ''}
+        ${b.genre ? `<span class="meta-tag">${escapeHtml(b.genre)}</span>` : ''}
+      </div>` : ''}
+      ${b.isSerie ? renderSeriesChips(b) : ''}
+      ${(!b.isSerie && b.note) ? `<div class="card-stars">${starsDisplay(b.note)}</div>` : ''}
+      ${b.avis ? `<p class="card-avis">${escapeHtml(b.avis)}</p>` : ''}
+      ${(!b.isSerie && b.revendu) ? `<div class="resold-flag">Revendu</div>` : ''}
+      <div class="edit-panel hidden" data-panel-for="${b.id}">
+        <div class="form-actions">
+          <button type="button" class="btn edit-btn" data-id="${b.id}">Modifier</button>
+          <button type="button" class="btn danger delete-btn" data-id="${b.id}">Supprimer</button>
+        </div>
+      </div>
+    </div>
+  `;}).join('');
+
+  container.querySelectorAll('.card').forEach(card=>{
+    card.addEventListener('click', (e)=>{
+      if(e.target.closest('button')) return;
+      const panel = card.querySelector('.edit-panel');
+      panel.classList.toggle('hidden');
+    });
+  });
+  container.querySelectorAll('.tome-toggle-btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const detail = document.getElementById('tome-detail-' + btn.dataset.toggleId);
+      const isHidden = detail.classList.contains('hidden');
+      detail.classList.toggle('hidden');
+      btn.textContent = isHidden ? 'Masquer le détail des tomes ▴' : 'Voir le détail des tomes ▾';
+    });
+  });
+  container.querySelectorAll('.edit-btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const book = books.find(b=>b.id===btn.dataset.id);
+      if(book) openFormForEdit(book);
+    });
+  });
+  container.querySelectorAll('.delete-btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      deleteBook(btn.dataset.id);
+    });
+  });
+}
+
+document.getElementById('search-titre').addEventListener('input', render);
+['filter-genre','filter-editeur','filter-statut','sort-by'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', render);
+});
+
+document.getElementById('export-btn').addEventListener('click', ()=>{
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    books,
+    covers
+  };
+  const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `carnet-de-lecture-sauvegarde-${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('import-file').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if(!Array.isArray(data.books)){
+      showStorageNotice('Ce fichier ne ressemble pas à une sauvegarde valide.');
+      e.target.value = '';
+      return;
+    }
+    books = data.books;
+    covers = data.covers || {};
+    await saveBooks();
+    await saveCovers();
+    render();
+    showStorageNotice(`Sauvegarde importée : ${books.length} livre(s).`);
+  }catch(err){
+    showStorageNotice('Impossible de lire ce fichier de sauvegarde.');
+  }
+  e.target.value = '';
+});
+
+loadBooks();
+</script>
+</body>
+</html>
