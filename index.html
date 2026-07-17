@@ -180,14 +180,28 @@
   #revendu-field-wrapper.hidden{display:none;}
   .tome-row{
     display:flex;
-    align-items:center;
-    gap:8px;
+    flex-direction:column;
+    gap:6px;
     padding:8px 0;
     border-bottom:1px solid var(--line);
   }
   .tome-row:last-child{border-bottom:none;}
+  .tome-row-top{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .tome-name{
+    flex:1;
+    padding:6px 8px;
+    border:1px solid var(--line-strong);
+    border-radius:6px;
+    font-size:13px;
+    font-family:'Inter',sans-serif;
+  }
   .tome-num{
     width:44px;
+    flex:none;
     padding:6px 4px;
     text-align:center;
     border:1px solid var(--line-strong);
@@ -276,6 +290,34 @@
     background:#fff;
   }
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .genre-input-row{display:flex;gap:6px;}
+  .genre-input-row input{flex:1;}
+  .genre-chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:8px;
+  }
+  .genre-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    background:var(--gold-bg);
+    color:var(--gold);
+    font-size:12px;
+    font-weight:500;
+    padding:4px 6px 4px 10px;
+    border-radius:20px;
+  }
+  .genre-chip-remove{
+    background:none;
+    border:none;
+    color:var(--gold);
+    cursor:pointer;
+    font-size:13px;
+    padding:0 2px;
+    line-height:1;
+  }
   .stars{display:flex;gap:4px;}
   .star-btn{
     background:none;border:none;cursor:pointer;
@@ -504,12 +546,23 @@
       </div>
     </div>
     <div class="field">
-      <label>Genre</label>
-      <input type="text" id="f-genre">
+      <label>Genre(s)</label>
+      <div class="genre-input-row">
+        <input type="text" id="f-genre-input" placeholder="ex: Fantasy">
+        <button type="button" class="btn small" id="add-genre-btn">Ajouter</button>
+      </div>
+      <div class="genre-chips" id="genre-chips"></div>
     </div>
     <div class="field check-row">
       <input type="checkbox" id="f-is-serie">
       <label for="f-is-serie">Série avec plusieurs tomes</label>
+    </div>
+    <div class="field" id="format-field-wrapper">
+      <label class="series-label">Format possédé</label>
+      <div class="tome-checks" style="margin-top:4px;">
+        <label><input type="checkbox" id="f-physique"> Physique</label>
+        <label><input type="checkbox" id="f-demat"> Démat</label>
+      </div>
     </div>
     <div class="row2" id="statut-field-wrapper">
       <div class="field">
@@ -517,8 +570,7 @@
         <select id="f-statut">
           <option value="a_lire">À lire</option>
           <option value="en_cours">En cours</option>
-          <option value="lu_livre">Lu (livre)</option>
-          <option value="lu_tablette">Lu (tablette)</option>
+          <option value="lu">Lu</option>
           <option value="dnf">DNF</option>
         </select>
       </div>
@@ -559,8 +611,7 @@
       <option value="">Tous les statuts</option>
       <option value="a_lire">À lire</option>
       <option value="en_cours">En cours</option>
-      <option value="lu_livre">Lu (livre)</option>
-      <option value="lu_tablette">Lu (tablette)</option>
+      <option value="lu">Lu</option>
       <option value="dnf">DNF</option>
     </select>
     <select id="sort-by">
@@ -592,6 +643,7 @@ let covers = {};
 let editingId = null;
 let formRating = 0;
 let formTomes = [];
+let formGenres = [];
 let formCoverUrl = '';
 let formCoverData = null;
 let formPhotoRemoved = false;
@@ -702,15 +754,18 @@ function renderTomeRows(){
     const row = document.createElement('div');
     row.className = 'tome-row';
     row.innerHTML = `
-      <input type="number" class="tome-num" min="1" value="${t.numero}" data-idx="${idx}" data-field="numero">
+      <div class="tome-row-top">
+        <input type="number" class="tome-num" min="1" value="${t.numero}" data-idx="${idx}" data-field="numero">
+        <input type="text" class="tome-name" placeholder="Nom du tome (optionnel)" value="${escapeHtml(t.nom || '')}" data-idx="${idx}" data-field="nom">
+        <button type="button" class="tome-remove" data-idx="${idx}" aria-label="Supprimer ce tome">✕</button>
+      </div>
       <div class="tome-checks">
-        <label><input type="checkbox" data-idx="${idx}" data-field="possede" ${t.possede ? 'checked' : ''}> Possédé</label>
-        <label><input type="checkbox" data-idx="${idx}" data-field="lu_livre" ${t.lu_livre ? 'checked' : ''}> Lu livre</label>
-        <label><input type="checkbox" data-idx="${idx}" data-field="lu_tablette" ${t.lu_tablette ? 'checked' : ''}> Lu tablette</label>
+        <label><input type="checkbox" data-idx="${idx}" data-field="physique" ${t.physique ? 'checked' : ''}> Physique</label>
+        <label><input type="checkbox" data-idx="${idx}" data-field="demat" ${t.demat ? 'checked' : ''}> Démat</label>
+        <label><input type="checkbox" data-idx="${idx}" data-field="lu" ${t.lu ? 'checked' : ''}> Lu</label>
         <label><input type="checkbox" data-idx="${idx}" data-field="dnf" ${t.dnf ? 'checked' : ''}> DNF</label>
         <label><input type="checkbox" data-idx="${idx}" data-field="revendu" ${t.revendu ? 'checked' : ''}> Revendu</label>
       </div>
-      <button type="button" class="tome-remove" data-idx="${idx}" aria-label="Supprimer ce tome">✕</button>
     `;
     container.appendChild(row);
   });
@@ -720,6 +775,8 @@ function renderTomeRows(){
       const field = e.target.dataset.field;
       if(field === 'numero'){
         formTomes[idx].numero = parseInt(e.target.value, 10) || 1;
+      } else if(field === 'nom'){
+        formTomes[idx].nom = e.target.value;
       } else {
         formTomes[idx][field] = e.target.checked;
       }
@@ -735,7 +792,7 @@ function renderTomeRows(){
 
 document.getElementById('add-tome-btn').addEventListener('click', ()=>{
   const maxNum = formTomes.reduce((m,t)=>Math.max(m, t.numero||0), 0);
-  formTomes.push({ numero: maxNum + 1, possede: true, lu_livre: false, lu_tablette: false, dnf: false, revendu: false });
+  formTomes.push({ numero: maxNum + 1, nom: '', physique: true, demat: false, lu: false, dnf: false, revendu: false });
   renderTomeRows();
 });
 
@@ -745,7 +802,7 @@ document.getElementById('bulk-add-tome-btn').addEventListener('click', ()=>{
   if(!count || count < 1) return;
   const maxNum = formTomes.reduce((m,t)=>Math.max(m, t.numero||0), 0);
   for(let i=1;i<=count;i++){
-    formTomes.push({ numero: maxNum + i, possede: true, lu_livre: false, lu_tablette: false, dnf: false, revendu: false });
+    formTomes.push({ numero: maxNum + i, nom: '', physique: true, demat: false, lu: false, dnf: false, revendu: false });
   }
   input.value = '';
   renderTomeRows();
@@ -754,12 +811,46 @@ document.getElementById('bulk-add-tome-btn').addEventListener('click', ()=>{
 document.getElementById('f-is-serie').addEventListener('change', (e)=>{
   const isSerie = e.target.checked;
   document.getElementById('series-field-wrapper').classList.toggle('hidden', !isSerie);
+  document.getElementById('format-field-wrapper').classList.toggle('hidden', isSerie);
   document.getElementById('statut-field-wrapper').classList.toggle('hidden', isSerie);
   document.getElementById('note-field-wrapper').classList.toggle('hidden', isSerie);
   document.getElementById('revendu-field-wrapper').classList.toggle('hidden', isSerie);
 });
 
-const STATUT_LABELS = { a_lire: 'À lire', en_cours: 'En cours', lu: 'Lu', lu_livre: 'Lu (livre)', lu_tablette: 'Lu (tablette)', dnf: 'DNF' };
+function renderGenreChips(){
+  const container = document.getElementById('genre-chips');
+  container.innerHTML = formGenres.map((g,i)=>`<span class="genre-chip">${escapeHtml(g)}<button type="button" class="genre-chip-remove" data-idx="${i}">✕</button></span>`).join('');
+  container.querySelectorAll('.genre-chip-remove').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      formGenres.splice(parseInt(btn.dataset.idx, 10), 1);
+      renderGenreChips();
+    });
+  });
+}
+
+function addGenre(value){
+  const v = (value || '').trim();
+  if(!v) return;
+  if(!formGenres.some(g=>g.toLowerCase() === v.toLowerCase())){
+    formGenres.push(v);
+  }
+  renderGenreChips();
+}
+
+document.getElementById('add-genre-btn').addEventListener('click', ()=>{
+  addGenre(document.getElementById('f-genre-input').value);
+  document.getElementById('f-genre-input').value = '';
+});
+
+document.getElementById('f-genre-input').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    addGenre(document.getElementById('f-genre-input').value);
+    document.getElementById('f-genre-input').value = '';
+  }
+});
+
+const STATUT_LABELS = { a_lire: 'À lire', en_cours: 'En cours', lu: 'Lu', dnf: 'DNF' };
 const TAB_COLORS = ['#A67C3D','#5E7A5C','#7A3B41','#4A6670','#6B4C6B','#8C5A3C'];
 
 function tabColorFor(genre){
@@ -767,6 +858,45 @@ function tabColorFor(genre){
   let hash = 0;
   for(let i=0;i<genre.length;i++){ hash = genre.charCodeAt(i) + ((hash<<5)-hash); }
   return TAB_COLORS[Math.abs(hash) % TAB_COLORS.length];
+}
+
+function migrateTomeFields(){
+  let changed = false;
+  books.forEach(b=>{
+    if(!Array.isArray(b.genres)){
+      b.genres = b.genre ? [b.genre] : [];
+      delete b.genre;
+      changed = true;
+    }
+    if(b.isSerie && Array.isArray(b.tomes)){
+      b.tomes.forEach(t=>{
+        if(!('physique' in t) && !('demat' in t)){
+          t.physique = !!t.possede;
+          t.demat = false;
+          delete t.possede;
+          changed = true;
+        }
+        if(!('lu' in t) && (('lu_livre' in t) || ('lu_tablette' in t))){
+          t.lu = !!(t.lu_livre || t.lu_tablette);
+          delete t.lu_livre;
+          delete t.lu_tablette;
+          changed = true;
+        }
+        if(!('nom' in t)){
+          t.nom = '';
+          changed = true;
+        }
+      });
+    } else if(!b.isSerie){
+      if(!('physique' in b) && !('demat' in b)){
+        if(b.statut === 'lu_livre'){ b.physique = true; b.demat = false; b.statut = 'lu'; }
+        else if(b.statut === 'lu_tablette'){ b.physique = false; b.demat = true; b.statut = 'lu'; }
+        else { b.physique = true; b.demat = false; }
+        changed = true;
+      }
+    }
+  });
+  return changed;
 }
 
 async function loadBooks(){
@@ -787,6 +917,9 @@ async function loadBooks(){
       books = [];
     }
     showStorageNotice('Sauvegarde locale sur ce navigateur. Pense à exporter une sauvegarde avant de changer d\'appareil.');
+  }
+  if(migrateTomeFields()){
+    await saveBooks();
   }
   await loadCovers();
   render();
@@ -888,7 +1021,7 @@ async function lookupISBN(isbnRaw){
     if(info.titre) document.getElementById('f-titre').value = info.titre;
     if(info.auteur) document.getElementById('f-auteur').value = info.auteur;
     if(info.editeur) document.getElementById('f-editeur').value = info.editeur;
-    if(info.genre && !document.getElementById('f-genre').value) document.getElementById('f-genre').value = info.genre;
+    if(info.genre && formGenres.length === 0) addGenre(info.genre);
     if(info.coverUrl && !formCoverData){
       formCoverUrl = info.coverUrl;
       formPhotoRemoved = false;
@@ -940,8 +1073,8 @@ async function searchByTitle(){
         document.getElementById('f-titre').value = v.title || titre;
         document.getElementById('f-auteur').value = v.authors ? v.authors.join(', ') : '';
         document.getElementById('f-editeur').value = v.publisher || '';
-        if(v.categories && v.categories.length && !document.getElementById('f-genre').value){
-          document.getElementById('f-genre').value = v.categories[0];
+        if(v.categories && v.categories.length && formGenres.length === 0){
+          addGenre(v.categories[0]);
         }
         const isbnEntry = (v.industryIdentifiers || []).find(id=>id.type === 'ISBN_13') || (v.industryIdentifiers || [])[0];
         if(isbnEntry && !document.getElementById('f-isbn').value){
@@ -1031,14 +1164,18 @@ function resetForm(){
   editingId = null;
   formRating = 0;
   formTomes = [];
+  formGenres = [];
   formCoverUrl = '';
   formCoverData = null;
   formPhotoRemoved = false;
   document.getElementById('f-photo').value = '';
   updatePhotoPreview();
   renderTomeRows();
+  renderGenreChips();
+  document.getElementById('f-genre-input').value = '';
   document.getElementById('f-is-serie').checked = false;
   document.getElementById('series-field-wrapper').classList.add('hidden');
+  document.getElementById('format-field-wrapper').classList.remove('hidden');
   document.getElementById('statut-field-wrapper').classList.remove('hidden');
   document.getElementById('note-field-wrapper').classList.remove('hidden');
   document.getElementById('revendu-field-wrapper').classList.remove('hidden');
@@ -1049,7 +1186,8 @@ function resetForm(){
   document.getElementById('f-titre').value = '';
   document.getElementById('f-auteur').value = '';
   document.getElementById('f-editeur').value = '';
-  document.getElementById('f-genre').value = '';
+  document.getElementById('f-physique').checked = true;
+  document.getElementById('f-demat').checked = false;
   document.getElementById('f-statut').value = 'a_lire';
   document.getElementById('f-avis').value = '';
   document.getElementById('f-revendu').checked = false;
@@ -1061,6 +1199,7 @@ function openFormForEdit(book){
   editingId = book.id;
   formRating = book.note || 0;
   formTomes = book.isSerie ? JSON.parse(JSON.stringify(book.tomes || [])) : [];
+  formGenres = book.genres ? [...book.genres] : (book.genre ? [book.genre] : []);
   formCoverData = covers[book.id] || null;
   formCoverUrl = book.coverUrl || '';
   formPhotoRemoved = false;
@@ -1068,17 +1207,21 @@ function openFormForEdit(book){
   updatePhotoPreview();
   document.getElementById('f-is-serie').checked = !!book.isSerie;
   document.getElementById('series-field-wrapper').classList.toggle('hidden', !book.isSerie);
+  document.getElementById('format-field-wrapper').classList.toggle('hidden', !!book.isSerie);
   document.getElementById('statut-field-wrapper').classList.toggle('hidden', !!book.isSerie);
   document.getElementById('note-field-wrapper').classList.toggle('hidden', !!book.isSerie);
   document.getElementById('revendu-field-wrapper').classList.toggle('hidden', !!book.isSerie);
   renderTomeRows();
+  renderGenreChips();
+  document.getElementById('f-genre-input').value = '';
   document.getElementById('f-isbn').value = book.isbn || '';
   document.getElementById('isbn-hint').textContent = '';
   document.getElementById('isbn-hint').className = 'hint';
   document.getElementById('f-titre').value = book.titre || '';
   document.getElementById('f-auteur').value = book.auteur || '';
   document.getElementById('f-editeur').value = book.editeur || '';
-  document.getElementById('f-genre').value = book.genre || '';
+  document.getElementById('f-physique').checked = !!book.physique;
+  document.getElementById('f-demat').checked = !!book.demat;
   document.getElementById('f-statut').value = book.statut || 'a_lire';
   document.getElementById('f-avis').value = book.avis || '';
   document.getElementById('f-revendu').checked = !!book.revendu;
@@ -1115,7 +1258,7 @@ document.getElementById('add-form').addEventListener('submit', async (e)=>{
     titre,
     auteur: document.getElementById('f-auteur').value.trim(),
     editeur: document.getElementById('f-editeur').value.trim(),
-    genre: document.getElementById('f-genre').value.trim(),
+    genres: [...formGenres],
     avis: document.getElementById('f-avis').value.trim(),
     coverUrl: formCoverUrl,
     isSerie
@@ -1125,10 +1268,14 @@ document.getElementById('add-form').addEventListener('submit', async (e)=>{
     data.statut = null;
     data.note = null;
     data.revendu = null;
+    data.physique = null;
+    data.demat = null;
   } else {
     data.statut = document.getElementById('f-statut').value;
     data.note = formRating;
     data.revendu = document.getElementById('f-revendu').checked;
+    data.physique = document.getElementById('f-physique').checked;
+    data.demat = document.getElementById('f-demat').checked;
     data.tomes = null;
   }
   if(formCoverData){
@@ -1164,7 +1311,7 @@ function populateFilterOptions(){
   const editeurSel = document.getElementById('filter-editeur');
   const curGenre = genreSel.value;
   const curEditeur = editeurSel.value;
-  const genres = [...new Set(books.map(b=>b.genre).filter(Boolean))].sort();
+  const genres = [...new Set(books.flatMap(b=>b.genres || []).filter(Boolean))].sort();
   const editeurs = [...new Set(books.map(b=>b.editeur).filter(Boolean))].sort();
   genreSel.innerHTML = '<option value="">Tous les genres</option>' + genres.map(g=>`<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
   editeurSel.innerHTML = '<option value="">Tous les éditeurs</option>' + editeurs.map(ed=>`<option value="${escapeHtml(ed)}">${escapeHtml(ed)}</option>`).join('');
@@ -1182,9 +1329,9 @@ function derivedStatut(b){
   if(!b.isSerie) return b.statut;
   const tomes = b.tomes || [];
   if(!tomes.length) return 'a_lire';
-  const owned = tomes.filter(t=>t.possede);
+  const owned = tomes.filter(t=>t.physique || t.demat);
   if(!owned.length) return 'a_lire';
-  const isDone = t => t.lu_livre || t.lu_tablette || t.dnf;
+  const isDone = t => t.lu || t.dnf;
   if(owned.every(isDone)) return 'lu';
   if(owned.some(isDone)) return 'en_cours';
   return 'a_lire';
@@ -1199,7 +1346,7 @@ function getFiltered(){
 
   let list = books.filter(b=>{
     if(search && !(b.titre||'').toLowerCase().includes(search)) return false;
-    if(genre && b.genre !== genre) return false;
+    if(genre && !(b.genres||[]).includes(genre)) return false;
     if(editeur && b.editeur !== editeur) return false;
     if(statut && derivedStatut(b) !== statut) return false;
     return true;
@@ -1209,7 +1356,7 @@ function getFiltered(){
   if(sortBy === 'titre') list.sort((a,b)=>(a.titre||'').localeCompare(b.titre||''));
   else if(sortBy === 'auteur') list.sort((a,b)=>(a.auteur||'').localeCompare(b.auteur||''));
   else if(sortBy === 'editeur') list.sort((a,b)=>(a.editeur||'').localeCompare(b.editeur||''));
-  else if(sortBy === 'genre') list.sort((a,b)=>(a.genre||'').localeCompare(b.genre||''));
+  else if(sortBy === 'genre') list.sort((a,b)=>((a.genres&&a.genres[0])||'').localeCompare((b.genres&&b.genres[0])||''));
   else list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
 
   return list;
@@ -1220,19 +1367,22 @@ function renderSeriesChips(b){
   if(!tomes.length){
     return '<p class="series-progress">Aucun tome enregistré.</p>';
   }
-  const owned = tomes.filter(t=>t.possede).length;
+  const owned = tomes.filter(t=>t.physique || t.demat).length;
   const dnfCount = tomes.filter(t=>t.dnf).length;
-  const luCount = tomes.filter(t=>t.lu_livre || t.lu_tablette).length;
+  const luCount = tomes.filter(t=>t.lu).length;
   const rows = tomes.map(t=>{
     let label, cls;
     if(t.revendu){ label = 'Revendu'; cls = 'revendu'; }
     else if(t.dnf){ label = 'DNF'; cls = 'dnf'; }
-    else if(t.lu_livre && t.lu_tablette){ label = 'Lu (livre + tablette)'; cls = 'lu'; }
-    else if(t.lu_livre){ label = 'Lu (livre)'; cls = 'lu'; }
-    else if(t.lu_tablette){ label = 'Lu (tablette)'; cls = 'lu'; }
-    else if(t.possede){ label = 'À lire'; cls = 'a_lire'; }
+    else if(t.lu){ label = 'Lu'; cls = 'lu'; }
+    else if(t.physique || t.demat){ label = 'À lire'; cls = 'a_lire'; }
     else { label = 'Non possédé'; cls = 'non_possede'; }
-    return `<div class="tome-row-display"><span class="tome-row-num">Tome ${t.numero}</span><span class="badge ${cls}">${label}</span></div>`;
+    const formatParts = [];
+    if(t.physique) formatParts.push('Physique');
+    if(t.demat) formatParts.push('Démat');
+    const formatLabel = formatParts.length ? ` · ${formatParts.join(' + ')}` : '';
+    const nameLabel = t.nom ? ` — ${escapeHtml(t.nom)}` : '';
+    return `<div class="tome-row-display"><span class="tome-row-num">Tome ${t.numero}${nameLabel}${formatLabel}</span><span class="badge ${cls}">${label}</span></div>`;
   }).join('');
   const dnfText = dnfCount ? `, ${dnfCount} DNF` : '';
   return `
@@ -1272,7 +1422,7 @@ function render(){
     const cover = covers[b.id] || b.coverUrl || '';
     return `
     <div class="card" data-id="${b.id}">
-      <div class="tab" style="background:${tabColorFor(b.genre)}"></div>
+      <div class="tab" style="background:${tabColorFor(b.genres && b.genres[0])}"></div>
       <div class="card-top">
         <div class="card-top-main">
           ${cover ? `<img class="card-cover" src="${cover}" alt="">` : ''}
@@ -1283,9 +1433,11 @@ function render(){
         </div>
         <span class="badge ${derivedStatut(b)}">${STATUT_LABELS[derivedStatut(b)] || ''}</span>
       </div>
-      ${(b.editeur || b.genre) ? `<div class="card-meta">
+      ${(b.editeur || (b.genres && b.genres.length) || (!b.isSerie && (b.physique || b.demat))) ? `<div class="card-meta">
         ${b.editeur ? `<span class="meta-tag">${escapeHtml(b.editeur)}</span>` : ''}
-        ${b.genre ? `<span class="meta-tag">${escapeHtml(b.genre)}</span>` : ''}
+        ${(b.genres||[]).map(g=>`<span class="meta-tag">${escapeHtml(g)}</span>`).join('')}
+        ${(!b.isSerie && b.physique) ? `<span class="meta-tag">Physique</span>` : ''}
+        ${(!b.isSerie && b.demat) ? `<span class="meta-tag">Démat</span>` : ''}
       </div>` : ''}
       ${b.isSerie ? renderSeriesChips(b) : ''}
       ${(!b.isSerie && b.note) ? `<div class="card-stars">${starsDisplay(b.note)}</div>` : ''}
@@ -1367,6 +1519,7 @@ document.getElementById('import-file').addEventListener('change', async (e)=>{
     }
     books = data.books;
     covers = data.covers || {};
+    migrateTomeFields();
     await saveBooks();
     await saveCovers();
     render();
