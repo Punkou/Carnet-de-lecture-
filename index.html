@@ -318,10 +318,10 @@
     padding:0 2px;
     line-height:1;
   }
-  .stars{display:flex;gap:4px;}
+  .stars{display:flex;flex-wrap:wrap;gap:2px;}
   .star-btn{
     background:none;border:none;cursor:pointer;
-    font-size:22px;color:var(--line-strong);
+    font-size:19px;color:var(--line-strong);
     padding:0;line-height:1;
   }
   .star-btn.on{color:var(--gold);}
@@ -813,7 +813,6 @@ document.getElementById('f-is-serie').addEventListener('change', (e)=>{
   document.getElementById('series-field-wrapper').classList.toggle('hidden', !isSerie);
   document.getElementById('format-field-wrapper').classList.toggle('hidden', isSerie);
   document.getElementById('statut-field-wrapper').classList.toggle('hidden', isSerie);
-  document.getElementById('note-field-wrapper').classList.toggle('hidden', isSerie);
   document.getElementById('revendu-field-wrapper').classList.toggle('hidden', isSerie);
 });
 
@@ -948,7 +947,7 @@ function uid(){
 
 function buildStars(container, value, onChange){
   container.innerHTML = '';
-  for(let i=1;i<=5;i++){
+  for(let i=1;i<=10;i++){
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'star-btn' + (i<=value ? ' on' : '');
@@ -1209,7 +1208,6 @@ function openFormForEdit(book){
   document.getElementById('series-field-wrapper').classList.toggle('hidden', !book.isSerie);
   document.getElementById('format-field-wrapper').classList.toggle('hidden', !!book.isSerie);
   document.getElementById('statut-field-wrapper').classList.toggle('hidden', !!book.isSerie);
-  document.getElementById('note-field-wrapper').classList.toggle('hidden', !!book.isSerie);
   document.getElementById('revendu-field-wrapper').classList.toggle('hidden', !!book.isSerie);
   renderTomeRows();
   renderGenreChips();
@@ -1261,18 +1259,17 @@ document.getElementById('add-form').addEventListener('submit', async (e)=>{
     genres: [...formGenres],
     avis: document.getElementById('f-avis').value.trim(),
     coverUrl: formCoverUrl,
+    note: formRating,
     isSerie
   };
   if(isSerie){
     data.tomes = [...formTomes].sort((a,b)=>a.numero-b.numero);
     data.statut = null;
-    data.note = null;
     data.revendu = null;
     data.physique = null;
     data.demat = null;
   } else {
     data.statut = document.getElementById('f-statut').value;
-    data.note = formRating;
     data.revendu = document.getElementById('f-revendu').checked;
     data.physique = document.getElementById('f-physique').checked;
     data.demat = document.getElementById('f-demat').checked;
@@ -1394,7 +1391,7 @@ function renderSeriesChips(b){
 
 function starsDisplay(n){
   let out = '';
-  for(let i=1;i<=5;i++) out += i<=n ? '★' : '☆';
+  for(let i=1;i<=10;i++) out += i<=n ? '★' : '☆';
   return out;
 }
 
@@ -1440,7 +1437,7 @@ function render(){
         ${(!b.isSerie && b.demat) ? `<span class="meta-tag">Démat</span>` : ''}
       </div>` : ''}
       ${b.isSerie ? renderSeriesChips(b) : ''}
-      ${(!b.isSerie && b.note) ? `<div class="card-stars">${starsDisplay(b.note)}</div>` : ''}
+      ${b.note ? `<div class="card-stars">${starsDisplay(b.note)}</div>` : ''}
       ${b.avis ? `<p class="card-avis">${escapeHtml(b.avis)}</p>` : ''}
       ${(!b.isSerie && b.revendu) ? `<div class="resold-flag">Revendu</div>` : ''}
       <div class="edit-panel hidden" data-panel-for="${b.id}">
