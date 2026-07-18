@@ -456,6 +456,17 @@
     padding:2px 8px;
     border-radius:6px;
   }
+  .serie-status-tag{
+    display:inline-block;
+    margin-top:8px;
+    font-size:11px;
+    font-weight:500;
+    padding:2px 9px;
+    border-radius:20px;
+  }
+  .serie-status-tag.en_cours{background:var(--sage-bg);color:var(--sage);}
+  .serie-status-tag.terminee{background:var(--gold-bg);color:var(--gold);}
+  .serie-status-tag.interrompue{background:var(--wine-bg);color:var(--wine);}
   .card-stars{margin-top:8px;font-size:13px;color:var(--gold);}
   .card-avis{
     margin-top:8px;
@@ -580,6 +591,14 @@
       <div class="stars" id="f-stars"></div>
     </div>
     <div id="series-field-wrapper" class="hidden">
+      <div class="field">
+        <label>Statut de la série</label>
+        <select id="f-serie-statut">
+          <option value="en_cours">En cours</option>
+          <option value="terminee">Terminée</option>
+          <option value="interrompue">Interrompue</option>
+        </select>
+      </div>
       <label class="series-label">Tomes</label>
       <div id="tomes-list"></div>
       <button type="button" class="btn" id="add-tome-btn">+ Ajouter un tome</button>
@@ -792,7 +811,7 @@ function renderTomeRows(){
 
 document.getElementById('add-tome-btn').addEventListener('click', ()=>{
   const maxNum = formTomes.reduce((m,t)=>Math.max(m, t.numero||0), 0);
-  formTomes.push({ numero: maxNum + 1, nom: '', physique: true, demat: false, lu: false, dnf: false, revendu: false });
+  formTomes.push({ numero: maxNum + 1, nom: '', physique: false, demat: false, lu: false, dnf: false, revendu: false });
   renderTomeRows();
 });
 
@@ -802,7 +821,7 @@ document.getElementById('bulk-add-tome-btn').addEventListener('click', ()=>{
   if(!count || count < 1) return;
   const maxNum = formTomes.reduce((m,t)=>Math.max(m, t.numero||0), 0);
   for(let i=1;i<=count;i++){
-    formTomes.push({ numero: maxNum + i, nom: '', physique: true, demat: false, lu: false, dnf: false, revendu: false });
+    formTomes.push({ numero: maxNum + i, nom: '', physique: false, demat: false, lu: false, dnf: false, revendu: false });
   }
   input.value = '';
   renderTomeRows();
@@ -850,6 +869,7 @@ document.getElementById('f-genre-input').addEventListener('keydown', (e)=>{
 });
 
 const STATUT_LABELS = { a_lire: 'À lire', en_cours: 'En cours', lu: 'Lu', dnf: 'DNF' };
+const SERIE_STATUT_LABELS = { en_cours: 'Série en cours', terminee: 'Série terminée', interrompue: 'Série interrompue' };
 const TAB_COLORS = ['#A67C3D','#5E7A5C','#7A3B41','#4A6670','#6B4C6B','#8C5A3C'];
 
 function tabColorFor(genre){
@@ -1185,9 +1205,10 @@ function resetForm(){
   document.getElementById('f-titre').value = '';
   document.getElementById('f-auteur').value = '';
   document.getElementById('f-editeur').value = '';
-  document.getElementById('f-physique').checked = true;
+  document.getElementById('f-physique').checked = false;
   document.getElementById('f-demat').checked = false;
   document.getElementById('f-statut').value = 'a_lire';
+  document.getElementById('f-serie-statut').value = 'en_cours';
   document.getElementById('f-avis').value = '';
   document.getElementById('f-revendu').checked = false;
   document.getElementById('submit-form').textContent = 'Enregistrer';
@@ -1221,6 +1242,7 @@ function openFormForEdit(book){
   document.getElementById('f-physique').checked = !!book.physique;
   document.getElementById('f-demat').checked = !!book.demat;
   document.getElementById('f-statut').value = book.statut || 'a_lire';
+  document.getElementById('f-serie-statut').value = book.serieStatut || 'en_cours';
   document.getElementById('f-avis').value = book.avis || '';
   document.getElementById('f-revendu').checked = !!book.revendu;
   document.getElementById('submit-form').textContent = 'Mettre à jour';
@@ -1264,12 +1286,14 @@ document.getElementById('add-form').addEventListener('submit', async (e)=>{
   };
   if(isSerie){
     data.tomes = [...formTomes].sort((a,b)=>a.numero-b.numero);
+    data.serieStatut = document.getElementById('f-serie-statut').value;
     data.statut = null;
     data.revendu = null;
     data.physique = null;
     data.demat = null;
   } else {
     data.statut = document.getElementById('f-statut').value;
+    data.serieStatut = null;
     data.revendu = document.getElementById('f-revendu').checked;
     data.physique = document.getElementById('f-physique').checked;
     data.demat = document.getElementById('f-demat').checked;
@@ -1430,6 +1454,7 @@ function render(){
         </div>
         <span class="badge ${derivedStatut(b)}">${STATUT_LABELS[derivedStatut(b)] || ''}</span>
       </div>
+      ${b.isSerie ? `<span class="serie-status-tag ${b.serieStatut || 'en_cours'}">${SERIE_STATUT_LABELS[b.serieStatut || 'en_cours']}</span>` : ''}
       ${(b.editeur || (b.genres && b.genres.length) || (!b.isSerie && (b.physique || b.demat))) ? `<div class="card-meta">
         ${b.editeur ? `<span class="meta-tag">${escapeHtml(b.editeur)}</span>` : ''}
         ${(b.genres||[]).map(g=>`<span class="meta-tag">${escapeHtml(g)}</span>`).join('')}
