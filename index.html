@@ -622,6 +622,7 @@
   </form>
 
   <input type="text" id="search-titre" class="search-input" placeholder="Rechercher un livre par titre...">
+  <input type="text" id="search-auteur" class="search-input" placeholder="Rechercher par auteur...">
 
   <div class="filters">
     <select id="filter-genre"><option value="">Tous les genres</option></select>
@@ -781,6 +782,7 @@ function renderTomeRows(){
       <div class="tome-checks">
         <label><input type="checkbox" data-idx="${idx}" data-field="physique" ${t.physique ? 'checked' : ''}> Physique</label>
         <label><input type="checkbox" data-idx="${idx}" data-field="demat" ${t.demat ? 'checked' : ''}> Démat</label>
+        <label><input type="checkbox" data-idx="${idx}" data-field="en_cours" ${t.en_cours ? 'checked' : ''}> En cours</label>
         <label><input type="checkbox" data-idx="${idx}" data-field="lu" ${t.lu ? 'checked' : ''}> Lu</label>
         <label><input type="checkbox" data-idx="${idx}" data-field="dnf" ${t.dnf ? 'checked' : ''}> DNF</label>
         <label><input type="checkbox" data-idx="${idx}" data-field="revendu" ${t.revendu ? 'checked' : ''}> Revendu</label>
@@ -811,7 +813,7 @@ function renderTomeRows(){
 
 document.getElementById('add-tome-btn').addEventListener('click', ()=>{
   const maxNum = formTomes.reduce((m,t)=>Math.max(m, t.numero||0), 0);
-  formTomes.push({ numero: maxNum + 1, nom: '', physique: false, demat: false, lu: false, dnf: false, revendu: false });
+  formTomes.push({ numero: maxNum + 1, nom: '', physique: false, demat: false, en_cours: false, lu: false, dnf: false, revendu: false });
   renderTomeRows();
 });
 
@@ -821,7 +823,7 @@ document.getElementById('bulk-add-tome-btn').addEventListener('click', ()=>{
   if(!count || count < 1) return;
   const maxNum = formTomes.reduce((m,t)=>Math.max(m, t.numero||0), 0);
   for(let i=1;i<=count;i++){
-    formTomes.push({ numero: maxNum + i, nom: '', physique: false, demat: false, lu: false, dnf: false, revendu: false });
+    formTomes.push({ numero: maxNum + i, nom: '', physique: false, demat: false, en_cours: false, lu: false, dnf: false, revendu: false });
   }
   input.value = '';
   renderTomeRows();
@@ -903,6 +905,10 @@ function migrateTomeFields(){
         }
         if(!('nom' in t)){
           t.nom = '';
+          changed = true;
+        }
+        if(!('en_cours' in t)){
+          t.en_cours = false;
           changed = true;
         }
       });
@@ -1354,12 +1360,13 @@ function derivedStatut(b){
   if(!owned.length) return 'a_lire';
   const isDone = t => t.lu || t.dnf;
   if(owned.every(isDone)) return 'lu';
-  if(owned.some(isDone)) return 'en_cours';
+  if(owned.some(isDone) || owned.some(t=>t.en_cours)) return 'en_cours';
   return 'a_lire';
 }
 
 function getFiltered(){
   const search = document.getElementById('search-titre').value.trim().toLowerCase();
+  const searchAuteur = document.getElementById('search-auteur').value.trim().toLowerCase();
   const genre = document.getElementById('filter-genre').value;
   const editeur = document.getElementById('filter-editeur').value;
   const statut = document.getElementById('filter-statut').value;
@@ -1367,6 +1374,7 @@ function getFiltered(){
 
   let list = books.filter(b=>{
     if(search && !(b.titre||'').toLowerCase().includes(search)) return false;
+    if(searchAuteur && !(b.auteur||'').toLowerCase().includes(searchAuteur)) return false;
     if(genre && !(b.genres||[]).includes(genre)) return false;
     if(editeur && b.editeur !== editeur) return false;
     if(statut && derivedStatut(b) !== statut) return false;
@@ -1396,6 +1404,7 @@ function renderSeriesChips(b){
     if(t.revendu){ label = 'Revendu'; cls = 'revendu'; }
     else if(t.dnf){ label = 'DNF'; cls = 'dnf'; }
     else if(t.lu){ label = 'Lu'; cls = 'lu'; }
+    else if(t.en_cours){ label = 'En cours'; cls = 'en_cours'; }
     else if(t.physique || t.demat){ label = 'À lire'; cls = 'a_lire'; }
     else { label = 'Non possédé'; cls = 'non_possede'; }
     const formatParts = [];
@@ -1506,6 +1515,7 @@ function render(){
 }
 
 document.getElementById('search-titre').addEventListener('input', render);
+document.getElementById('search-auteur').addEventListener('input', render);
 ['filter-genre','filter-editeur','filter-statut','sort-by'].forEach(id=>{
   document.getElementById(id).addEventListener('change', render);
 });
